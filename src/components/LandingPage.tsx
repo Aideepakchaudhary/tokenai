@@ -13,25 +13,25 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
     { name: "Arbitrum", symbol: "ARB" },
     { name: "Optimism", symbol: "OP" },
     { name: "Base", symbol: "BASE" },
-    { name: "BSC", symbol: "BNB" }
+    { name: "BSC", symbol: "BNB" },
   ];
 
   const features = [
     {
       icon: Sparkles,
       title: "AI-Powered Queries",
-      description: "Ask questions in natural language and get instant insights"
+      description: "Ask questions in natural language and get instant insights",
     },
     {
       icon: Zap,
       title: "Real-Time Data",
-      description: "Live blockchain data from The Graph Token API"
+      description: "Live blockchain data from The Graph Token API",
     },
     {
       icon: TrendingUp,
       title: "Advanced Analytics",
-      description: "Whale tracking, token distribution, and price analysis"
-    }
+      description: "Whale tracking, token distribution, and price analysis",
+    },
   ];
 
   return (
@@ -42,20 +42,20 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
           <Badge variant="secondary" className="mb-6 text-lg px-6 py-2">
             🚀 ETHGlobal New Delhi
           </Badge>
-          
+
           <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight">
-            <span className="text-gradient">The Graph Token API</span>
+            <span className="text-gradient">Track every token & every</span>
             <br />
-            <span className="text-foreground">is Real and Perfect</span>
+            <span className="text-foreground">major move—live,</span>
             <br />
-            <span className="text-gradient">for ETHGlobal!</span>
+            <span className="text-gradient">across major chains</span>
           </h1>
-          
+
           <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
-            Ask anything about tokens and get instant insights powered by AI + The Graph.
-            Natural language queries meet live blockchain data.
+            Ask anything about tokens and get instant insights powered by AI +
+            The Graph. Natural language queries meet live blockchain data.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
             <Button
               size="lg"
@@ -90,7 +90,9 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
         {/* Supported Chains */}
         <div className="text-center">
-          <h3 className="text-2xl font-bold mb-8 text-gradient">Supported Chains</h3>
+          <h3 className="text-2xl font-bold mb-8 text-gradient">
+            Supported Chains
+          </h3>
           <div className="flex flex-wrap justify-center gap-4">
             {chains.map((chain, index) => (
               <Badge
@@ -107,9 +109,18 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
       {/* Floating Animation Elements */}
       <div className="absolute top-20 left-20 w-2 h-2 bg-primary rounded-full animate-float opacity-60"></div>
-      <div className="absolute top-40 right-32 w-3 h-3 bg-secondary rounded-full animate-float opacity-40" style={{ animationDelay: '1s' }}></div>
-      <div className="absolute bottom-40 left-1/4 w-2 h-2 bg-accent rounded-full animate-float opacity-50" style={{ animationDelay: '2s' }}></div>
-      <div className="absolute bottom-20 right-20 w-4 h-4 bg-primary rounded-full animate-float opacity-30" style={{ animationDelay: '3s' }}></div>
+      <div
+        className="absolute top-40 right-32 w-3 h-3 bg-secondary rounded-full animate-float opacity-40"
+        style={{ animationDelay: "1s" }}
+      ></div>
+      <div
+        className="absolute bottom-40 left-1/4 w-2 h-2 bg-accent rounded-full animate-float opacity-50"
+        style={{ animationDelay: "2s" }}
+      ></div>
+      <div
+        className="absolute bottom-20 right-20 w-4 h-4 bg-primary rounded-full animate-float opacity-30"
+        style={{ animationDelay: "3s" }}
+      ></div>
     </div>
   );
 }
