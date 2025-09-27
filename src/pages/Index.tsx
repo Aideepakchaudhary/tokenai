@@ -4,6 +4,7 @@ import { LandingPage } from "@/components/LandingPage";
 import { QueryInput } from "@/components/QueryInput";
 import { ResultsDashboard } from "@/components/ResultsDashboard";
 import { DemoShowcase } from "@/components/DemoShowcase";
+import { WhaleTracker } from "@/components/WhaleTracker";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState("landing");
@@ -42,6 +43,8 @@ const Index = () => {
             onNewQuery={handleNewQuery} 
           />
         );
+      case "whales":
+        return <WhaleTracker />;
       case "demo":
         return <DemoShowcase onManualMode={handleManualMode} />;
       default:

@@ -95,16 +95,37 @@ export const createWhaleAnalysisTool = (baseUrl: string, chain: string = 'ethere
     
     Input should be a token contract address (0x followed by 40 hex characters).`,
     
-    func: async (tokenAddress: string) => {
+    func: async (tokenInput: string) => {
       try {
+        // Handle both token symbols and addresses
+        let tokenAddress = tokenInput.trim();
+        
+        // Token symbol mapping for common tokens
+        const tokenMapping: Record<string, string> = {
+          'UNI': '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
+          'USDC': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+          'USDT': '0xdac17f958d2ee523a2206206994597c13d831ec7',
+          'WETH': '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+          'DAI': '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+          'LINK': '0x514910771AF9Ca656af840dff83E8264EcF986CA',
+          'COMP': '0xc00e94Cb662C3520282E6f5717214004A7f26888',
+          'WBTC': '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
+        };
+        
+        // If input is a symbol, convert to address
+        if (!tokenAddress.startsWith('0x')) {
+          const upperToken = tokenAddress.toUpperCase();
+          tokenAddress = tokenMapping[upperToken] || tokenAddress;
+        }
+        
         // Validate token address
         const addressRegex = /0x[a-fA-F0-9]{40}/g;
-        const cleanAddress = tokenAddress.trim().match(addressRegex)?.[0];
+        const cleanAddress = tokenAddress.match(addressRegex)?.[0];
         
         if (!cleanAddress) {
           return JSON.stringify({
-            error: "Invalid token address format. Please provide a valid token contract address (0x followed by 40 hex characters).",
-            example: "0xA0b86a33E6441e47c4C46ff0ba81F73e2D08dE26"
+            error: `Invalid token identifier: ${tokenInput}. Please provide a token symbol (UNI, USDC, etc.) or valid contract address (0x...)`,
+            supportedSymbols: Object.keys(tokenMapping)
           });
         }
 

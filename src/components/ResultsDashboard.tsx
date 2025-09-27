@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, RefreshCw, TrendingUp, TrendingDown, Users, DollarSign, AlertCircle, Star, StarOff, Activity } from "lucide-react";
 import { TokenBalance } from "@/lib/types";
+import { WhaleAlerts } from "./WhaleAlerts";
 
 interface ResultsDashboardProps {
   query: string;
@@ -255,7 +256,8 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
                 </span>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <WhaleAlerts followedWhales={followedWhales} />
               <Button variant="outline" className="btn-ghost-neon">
                 <Download className="w-4 h-4 mr-2" />
                 Export
