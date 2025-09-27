@@ -82,22 +82,96 @@ export const createPortfolioAnalysisTool = (baseUrl: string, chain: string = 'et
   });
 };
 
-// Whale Analysis Tool (placeholder for future implementation)
-export const createWhaleAnalysisTool = (baseUrl: string) => {
+// Whale Analysis Tool
+export const createWhaleAnalysisTool = (baseUrl: string, chain: string = 'ethereum') => {
   return new DynamicTool({
     name: "whale_analysis",
-    description: `Analyze whale holders of a specific token. Use this when users ask about:
+    description: `Analyze whale holders and distribution of a specific token. Use this when users ask about:
     - "Who are the biggest holders of [TOKEN]?"
-    - "Show me [TOKEN] whales"
+    - "Show me [TOKEN] whales"  
     - "Whale analysis for [TOKEN]"
+    - "Is [TOKEN] whale dominated?"
+    - "Token distribution analysis for [TOKEN]"
     
-    Currently returns a placeholder response - full implementation coming soon.`,
+    Input should be a token contract address (0x followed by 40 hex characters).`,
     
-    func: async (query: string) => {
-      return JSON.stringify({
-        message: "Whale analysis feature is coming soon! For now, I can analyze wallet portfolios. Try asking: 'Analyze my portfolio 0x...'",
-        availableFeatures: ["Portfolio Analysis", "Token Holdings", "Diversity Scoring"]
-      });
+    func: async (tokenInput: string) => {
+      try {
+        // Handle both token symbols and addresses
+        let tokenAddress = tokenInput.trim();
+        
+        // Token symbol mapping for common tokens
+        const tokenMapping: Record<string, string> = {
+          'UNI': '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
+          'USDC': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+          'USDT': '0xdac17f958d2ee523a2206206994597c13d831ec7',
+          'WETH': '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+          'DAI': '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+          'LINK': '0x514910771AF9Ca656af840dff83E8264EcF986CA',
+          'COMP': '0xc00e94Cb662C3520282E6f5717214004A7f26888',
+          'WBTC': '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'
+        };
+        
+        // If input is a symbol, convert to address
+        if (!tokenAddress.startsWith('0x')) {
+          const upperToken = tokenAddress.toUpperCase();
+          tokenAddress = tokenMapping[upperToken] || tokenAddress;
+        }
+        
+        // Validate token address
+        const addressRegex = /0x[a-fA-F0-9]{40}/g;
+        const cleanAddress = tokenAddress.match(addressRegex)?.[0];
+        
+        if (!cleanAddress) {
+          return JSON.stringify({
+            error: `Invalid token identifier: ${tokenInput}. Please provide a token symbol (UNI, USDC, etc.) or valid contract address (0x...)`,
+            supportedSymbols: Object.keys(tokenMapping)
+          });
+        }
+
+        // Call whale analysis API
+        const response = await axios.get(`${baseUrl}/api/whale/holders/${cleanAddress}?chain=${chain}&limit=50`);
+        
+        if (!response.data.success) {
+          return JSON.stringify({
+            error: response.data.error || "Failed to fetch whale data"
+          });
+        }
+
+        const data = response.data.data;
+        
+        // Format response for AI
+        return JSON.stringify({
+          success: true,
+          summary: `Whale Analysis for ${data.tokenSymbol} (${data.tokenName})`,
+          distribution: {
+            whaleCount: data.whaleCount,
+            concentration: `${data.whaleConcentration}% held by top 10`,
+            riskScore: `${data.riskScore}/100`,
+            health: data.distributionHealth
+          },
+          insights: data.insights,
+          topWhales: data.topWhales.slice(0, 5).map((whale: any) => ({
+            address: `${whale.address.slice(0, 6)}...${whale.address.slice(-4)}`,
+            percentage: `${whale.percentage.toFixed(2)}%`,
+            type: whale.whaleType,
+            riskLevel: whale.riskLevel,
+            valueUSD: formatUSD(whale.balanceUSD)
+          })),
+          riskAssessment: {
+            overall: data.distributionHealth,
+            score: data.riskScore,
+            recommendation: data.riskScore > 70 ? "High risk - monitor whale activity" : 
+                          data.riskScore > 40 ? "Medium risk - normal whale monitoring" : 
+                          "Low risk - healthy distribution"
+          }
+        });
+
+      } catch (error: any) {
+        return JSON.stringify({
+          error: error.response?.data?.error || error.message || "Failed to analyze whale holders"
+        });
+      }
     }
   });
 };

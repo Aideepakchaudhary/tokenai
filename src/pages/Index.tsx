@@ -3,6 +3,8 @@ import { Navigation } from "@/components/Navigation";
 import { LandingPage } from "@/components/LandingPage";
 import { QueryInput } from "@/components/QueryInput";
 
+import { WhaleTracker } from "@/components/WhaleTracker";
+
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState("landing");
 
@@ -16,6 +18,8 @@ const Index = () => {
         return <LandingPage onGetStarted={handleGetStarted} />;
       case "query":
         return <QueryInput />;
+        case "whales":
+          return <WhaleTracker />;
       default:
         return <LandingPage onGetStarted={handleGetStarted} />;
     }

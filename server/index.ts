@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { portfolioRouter } from './routes/portfolio';
 import { chatRouter } from './routes/chat';
+import { whaleRouter } from './routes/whale';
 
 // Load environment variables
 dotenv.config();
@@ -54,6 +55,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/portfolio', portfolioRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/whale', whaleRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -81,6 +83,7 @@ app.listen(PORT, () => {
   console.log(`🚀 ChainMate API Server running on port ${PORT}`);
   console.log(`📊 Portfolio API: http://localhost:${PORT}/api/portfolio`);
   console.log(`🤖 Chat API: http://localhost:${PORT}/api/chat`);
+  console.log(`🐋 Whale API: http://localhost:${PORT}/api/whale`);
   console.log(`❤️ Health Check: http://localhost:${PORT}/health`);
 });
 
