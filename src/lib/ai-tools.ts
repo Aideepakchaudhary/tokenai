@@ -43,7 +43,7 @@ export const createPortfolioAnalysisTool = (baseUrl: string) => {
           success: true,
           summary: `Portfolio Analysis for ${data.walletAddress}`,
           metrics: {
-            totalValue: `$${data.totalValueUSD.toLocaleString()}`,
+            totalValue: `$${data.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             tokenCount: data.tokenCount,
             diversityScore: `${data.diversityScore}/100`,
             portfolioHealth: data.portfolioHealth,
@@ -54,7 +54,7 @@ export const createPortfolioAnalysisTool = (baseUrl: string) => {
           topTokens: data.tokens.slice(0, 5).map(token => ({
             symbol: token.symbol,
             name: token.name,
-            value: `$${token.value.toLocaleString()}`,
+            value: `$${token.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
             balance: (parseFloat(token.amount) / Math.pow(10, token.decimals)).toFixed(4)
           })),
           lastActivity: data.lastActivity
@@ -97,6 +97,62 @@ export const extractAddressFromQuery = (query: string): string | null => {
   return matches ? matches[0] : null;
 };
 
+// Balance Tool for simple balance queries
+export const createBalanceTool = (baseUrl: string) => {
+  return new DynamicTool({
+    name: "balance_check",
+    description: `Get the balance and basic information for a crypto wallet. Use this when users ask about:
+    - "Give me the balance of this account"
+    - "What's the balance of 0x..."
+    - "Show me the balance"
+    - "How much does this wallet have?"
+    - "What's the total value of 0x..."
+    
+    Input should be a valid Ethereum wallet address (0x followed by 40 hex characters).`,
+    
+    func: async (walletAddress: string) => {
+      try {
+        // Validate wallet address
+        if (!isValidAddress(walletAddress.trim())) {
+          return JSON.stringify({
+            error: "Invalid wallet address format. Please provide a valid Ethereum address (0x followed by 40 hex characters).",
+            example: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          });
+        }
+
+        // Call our portfolio API
+        const response = await axios.get(`${baseUrl}/api/portfolio?wallet=${encodeURIComponent(walletAddress.trim())}`);
+        
+        if (!response.data.success) {
+          return JSON.stringify({
+            error: response.data.error || "Failed to fetch balance data"
+          });
+        }
+
+        const data = response.data.data;
+        
+        // Format response for balance query - much simpler than full analysis
+        return JSON.stringify({
+          success: true,
+          summary: `Balance for ${data.walletAddress}`,
+          totalValue: `$${data.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          tokenCount: data.tokenCount,
+          topTokens: data.tokens.slice(0, 3).map(token => ({
+            symbol: token.symbol,
+            value: `$${token.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          })),
+          lastActivity: data.lastActivity
+        });
+
+      } catch (error: any) {
+        return JSON.stringify({
+          error: error.response?.data?.error || error.message || "Failed to get balance"
+        });
+      }
+    }
+  });
+};
+
 // Query Intent Detection
 export const detectIntent = (query: string): { intent: string; address?: string } => {
   const lowerQuery = query.toLowerCase();
@@ -104,12 +160,20 @@ export const detectIntent = (query: string): { intent: string; address?: string 
   // Extract address if present
   const address = extractAddressFromQuery(query);
   
-  // Portfolio-related queries
+  // Balance-related queries (simple)
+  if (lowerQuery.includes('balance') || 
+      lowerQuery.includes('total value') ||
+      lowerQuery.includes('how much') ||
+      lowerQuery.includes('what does') && lowerQuery.includes('have')) {
+    return { intent: 'balance_check', address };
+  }
+  
+  // Portfolio-related queries (detailed analysis)
   if (lowerQuery.includes('portfolio') || 
-      lowerQuery.includes('my wallet') ||
-      lowerQuery.includes('what do i own') ||
-      lowerQuery.includes('my tokens') ||
-      lowerQuery.includes('analyze') && address) {
+      lowerQuery.includes('analyze') ||
+      lowerQuery.includes('diversity') ||
+      lowerQuery.includes('insights') ||
+      lowerQuery.includes('breakdown')) {
     return { intent: 'portfolio_analysis', address };
   }
   
@@ -118,6 +182,11 @@ export const detectIntent = (query: string): { intent: string; address?: string 
       lowerQuery.includes('biggest holder') ||
       lowerQuery.includes('top holder')) {
     return { intent: 'whale_analysis' };
+  }
+  
+  // Default to balance for simple queries with address
+  if (address && !lowerQuery.includes('analyze')) {
+    return { intent: 'balance_check', address };
   }
   
   // Default

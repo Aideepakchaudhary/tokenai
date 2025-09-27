@@ -2,7 +2,7 @@ import express from 'express';
 import { ChatOpenAI } from "@langchain/openai";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { createPortfolioAnalysisTool, createWhaleAnalysisTool } from '../../src/lib/ai-tools';
+import { createPortfolioAnalysisTool, createWhaleAnalysisTool, createBalanceTool } from '../../src/lib/ai-tools';
 import { APIResponse, ChatMessage } from '../../src/lib/types';
 
 export const chatRouter = express.Router();
@@ -32,6 +32,7 @@ chatRouter.post('/', async (req: express.Request, res: express.Response) => {
     // Create tools
     const baseUrl = process.env.BACKEND_URL || 'http://localhost:3001';
     const tools = [
+      createBalanceTool(baseUrl),
       createPortfolioAnalysisTool(baseUrl),
       createWhaleAnalysisTool(baseUrl)
     ];
@@ -43,19 +44,21 @@ chatRouter.post('/', async (req: express.Request, res: express.Response) => {
         `You are ChainMate, an AI-powered crypto portfolio analyst. You help users analyze their crypto wallets and token holdings.
 
 Your capabilities:
-- Portfolio Analysis: Analyze wallet holdings, calculate diversity scores, provide insights
-- Token Research: Information about specific tokens (coming soon)  
+- Balance Check: Get wallet balance and basic token information
+- Portfolio Analysis: Detailed analysis with diversity scores, insights, and recommendations
 - Whale Analysis: Track large token holders (coming soon)
 
 Guidelines:
 1. Always be helpful and accurate with crypto data
-2. If a user mentions a wallet address, use the portfolio_analysis tool
+2. Choose the right tool based on user intent:
+   - Use "balance_check" for simple balance/value queries ("balance", "how much", "total value")
+   - Use "portfolio_analysis" for detailed analysis ("analyze", "insights", "diversity", "breakdown")
 3. Explain complex crypto concepts in simple terms
-4. Provide actionable insights and recommendations
+4. Provide actionable insights and recommendations when doing analysis
 5. If you need a wallet address, ask the user to provide one
-6. Format responses clearly with bullet points and sections when appropriate
+6. Format responses clearly and concisely
 
-Current working features: Portfolio Analysis
+Current working features: Balance Check, Portfolio Analysis
 Coming soon: Whale tracking, Token discovery, Multi-chain analysis`
       ],
       [

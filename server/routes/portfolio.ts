@@ -4,6 +4,7 @@ import { APIResponse, PortfolioAnalysis, TokenBalance } from '../../src/lib/type
 import {
   calculateDiversityScore,
   getPortfolioHealth,
+  getPortfolioHealthEnhanced,
   generatePortfolioInsights,
   isValidAddress,
   formatCurrency
@@ -46,7 +47,43 @@ portfolioRouter.get('/', async (req: express.Request, res: express.Response) => 
       }
     );
 
-    const tokens: TokenBalance[] = response.data.data || [];
+    const rawTokens: TokenBalance[] = response.data.data || [];
+    
+    // Log raw data for debugging
+    console.log(`\n=== Raw Token Data for ${wallet} ===`);
+    console.log(`Total tokens received: ${rawTokens.length}`);
+    rawTokens.forEach((token, index) => {
+      console.log(`Token ${index + 1}: ${token.symbol} (${token.name})`);
+      console.log(`  Amount: ${token.amount}`);
+      console.log(`  Value: ${token.value}`);
+      console.log(`  Decimals: ${token.decimals}`);
+      console.log(`  Contract: ${token.contract}`);
+    });
+    
+    // Validate and filter token data
+    const tokens: TokenBalance[] = rawTokens.filter(token => {
+      // Filter out tokens with unrealistic values (> $10 billion)
+      if (token.value > 10_000_000_000) {
+        console.log(`⚠️  Filtering out ${token.symbol} with unrealistic value: $${token.value}`);
+        return false;
+      }
+      
+      // Filter out tokens with negative values
+      if (token.value < 0) {
+        console.log(`⚠️  Filtering out ${token.symbol} with negative value: $${token.value}`);
+        return false;
+      }
+      
+      // Filter out tokens with zero values (unless it's a legitimate small amount)
+      if (token.value === 0 && parseFloat(token.amount) === 0) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`Filtered tokens count: ${tokens.length}`);
+    console.log('=== End Raw Data ===\n');
 
     if (!tokens || tokens.length === 0) {
       return res.json({
@@ -80,11 +117,11 @@ portfolioRouter.get('/', async (req: express.Request, res: express.Response) => 
     // Find top holding
     const sortedTokens = tokens.sort((a, b) => b.value - a.value);
     const topToken = sortedTokens[0];
-    const topPercentage = ((topToken.value / totalValueUSD) * 100).toFixed(1);
+    const topPercentage = parseFloat(((topToken.value / totalValueUSD) * 100).toFixed(1));
     
-    // Calculate diversity score
+    // Calculate diversity score and enhanced health
     const diversityScore = calculateDiversityScore(tokens);
-    const portfolioHealth = getPortfolioHealth(diversityScore);
+    const portfolioHealth = getPortfolioHealthEnhanced(diversityScore, topPercentage);
 
     // Simple sector categorization (can be enhanced later)
     const sectorBreakdown: Record<string, { valueUSD: number; percentage: string }> = {};

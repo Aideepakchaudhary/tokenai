@@ -15,8 +15,8 @@ export function formatCurrency(value: number, decimals: number = 2): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -49,6 +49,19 @@ export function getPortfolioHealth(diversityScore: number): 'concentrated' | 'mo
   return 'diversified';
 }
 
+// Enhanced portfolio health calculation with concentration override
+export function getPortfolioHealthEnhanced(diversityScore: number, topHoldingPercentage: number): 'concentrated' | 'moderate' | 'diversified' {
+  // Override: If top holding is >60%, force concentrated regardless of diversity score
+  if (topHoldingPercentage > 60) {
+    return 'concentrated';
+  }
+  
+  // Standard diversity-based classification
+  if (diversityScore < 30) return 'concentrated';
+  if (diversityScore < 70) return 'moderate';
+  return 'diversified';
+}
+
 // Generate AI insights based on portfolio data
 export function generatePortfolioInsights(data: {
   diversityScore: number;
@@ -57,7 +70,14 @@ export function generatePortfolioInsights(data: {
 }): string[] {
   const insights: string[] = [];
   
-  if (data.diversityScore < 30) {
+  const topPercentage = parseFloat(data.topHolding.percentage);
+  
+  // Concentration insights based on top holding percentage
+  if (topPercentage > 80) {
+    insights.push("Portfolio is extremely concentrated - consider diversifying to reduce risk");
+  } else if (topPercentage > 60) {
+    insights.push("Portfolio shows high concentration - consider adding other positions");
+  } else if (data.diversityScore < 30) {
     insights.push("Portfolio is highly concentrated - consider diversifying to reduce risk");
   } else if (data.diversityScore > 80) {
     insights.push("Well-diversified portfolio with good risk distribution");
@@ -67,11 +87,6 @@ export function generatePortfolioInsights(data: {
     insights.push("Portfolio has few tokens - may benefit from additional positions");
   } else if (data.tokenCount > 20) {
     insights.push("Large number of positions - consider consolidating smaller holdings");
-  }
-  
-  const topPercentage = parseFloat(data.topHolding.percentage);
-  if (topPercentage > 50) {
-    insights.push("Top holding dominates portfolio - high concentration risk");
   }
   
   return insights;
