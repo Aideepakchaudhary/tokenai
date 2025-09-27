@@ -82,22 +82,75 @@ export const createPortfolioAnalysisTool = (baseUrl: string, chain: string = 'et
   });
 };
 
-// Whale Analysis Tool (placeholder for future implementation)
-export const createWhaleAnalysisTool = (baseUrl: string) => {
+// Whale Analysis Tool
+export const createWhaleAnalysisTool = (baseUrl: string, chain: string = 'ethereum') => {
   return new DynamicTool({
     name: "whale_analysis",
-    description: `Analyze whale holders of a specific token. Use this when users ask about:
+    description: `Analyze whale holders and distribution of a specific token. Use this when users ask about:
     - "Who are the biggest holders of [TOKEN]?"
-    - "Show me [TOKEN] whales"
+    - "Show me [TOKEN] whales"  
     - "Whale analysis for [TOKEN]"
+    - "Is [TOKEN] whale dominated?"
+    - "Token distribution analysis for [TOKEN]"
     
-    Currently returns a placeholder response - full implementation coming soon.`,
+    Input should be a token contract address (0x followed by 40 hex characters).`,
     
-    func: async (query: string) => {
-      return JSON.stringify({
-        message: "Whale analysis feature is coming soon! For now, I can analyze wallet portfolios. Try asking: 'Analyze my portfolio 0x...'",
-        availableFeatures: ["Portfolio Analysis", "Token Holdings", "Diversity Scoring"]
-      });
+    func: async (tokenAddress: string) => {
+      try {
+        // Validate token address
+        const addressRegex = /0x[a-fA-F0-9]{40}/g;
+        const cleanAddress = tokenAddress.trim().match(addressRegex)?.[0];
+        
+        if (!cleanAddress) {
+          return JSON.stringify({
+            error: "Invalid token address format. Please provide a valid token contract address (0x followed by 40 hex characters).",
+            example: "0xA0b86a33E6441e47c4C46ff0ba81F73e2D08dE26"
+          });
+        }
+
+        // Call whale analysis API
+        const response = await axios.get(`${baseUrl}/api/whale/holders/${cleanAddress}?chain=${chain}&limit=50`);
+        
+        if (!response.data.success) {
+          return JSON.stringify({
+            error: response.data.error || "Failed to fetch whale data"
+          });
+        }
+
+        const data = response.data.data;
+        
+        // Format response for AI
+        return JSON.stringify({
+          success: true,
+          summary: `Whale Analysis for ${data.tokenSymbol} (${data.tokenName})`,
+          distribution: {
+            whaleCount: data.whaleCount,
+            concentration: `${data.whaleConcentration}% held by top 10`,
+            riskScore: `${data.riskScore}/100`,
+            health: data.distributionHealth
+          },
+          insights: data.insights,
+          topWhales: data.topWhales.slice(0, 5).map((whale: any) => ({
+            address: `${whale.address.slice(0, 6)}...${whale.address.slice(-4)}`,
+            percentage: `${whale.percentage.toFixed(2)}%`,
+            type: whale.whaleType,
+            riskLevel: whale.riskLevel,
+            valueUSD: formatUSD(whale.balanceUSD)
+          })),
+          riskAssessment: {
+            overall: data.distributionHealth,
+            score: data.riskScore,
+            recommendation: data.riskScore > 70 ? "High risk - monitor whale activity" : 
+                          data.riskScore > 40 ? "Medium risk - normal whale monitoring" : 
+                          "Low risk - healthy distribution"
+          }
+        });
+
+      } catch (error: any) {
+        return JSON.stringify({
+          error: error.response?.data?.error || error.message || "Failed to analyze whale holders"
+        });
+      }
     }
   });
 };

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, RefreshCw, TrendingUp, TrendingDown, Users, DollarSign, AlertCircle } from "lucide-react";
+import { Download, RefreshCw, TrendingUp, TrendingDown, Users, DollarSign, AlertCircle, Star, StarOff, Activity } from "lucide-react";
 import { TokenBalance } from "@/lib/types";
 
 interface ResultsDashboardProps {
@@ -17,6 +17,9 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
   const [tokens, setTokens] = useState<TokenBalance[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [portfolioData, setPortfolioData] = useState<any>(null);
+  const [whaleData, setWhaleData] = useState<any>(null);
+  const [queryType, setQueryType] = useState<'wallet' | 'whale' | 'unknown'>('unknown');
+  const [followedWhales, setFollowedWhales] = useState<Set<string>>(new Set());
 
   const mockTransfers = [
     {
@@ -52,29 +55,93 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
     return matches ? matches[0] : null;
   };
 
+  // Helper function to detect query type
+  const detectQueryType = (query: string): 'wallet' | 'whale' | 'unknown' => {
+    const lowerQuery = query.toLowerCase();
+    const hasAddress = extractWalletAddress(query);
+    
+    if (!hasAddress) return 'unknown';
+    
+    // Whale-related keywords
+    if (lowerQuery.includes('whale') || 
+        lowerQuery.includes('holder') || 
+        lowerQuery.includes('distribution') ||
+        lowerQuery.includes('biggest') ||
+        lowerQuery.includes('top holders')) {
+      return 'whale';
+    }
+    
+    // Wallet-related keywords  
+    if (lowerQuery.includes('wallet') || 
+        lowerQuery.includes('portfolio') ||
+        lowerQuery.includes('analyze') ||
+        lowerQuery.includes('balance')) {
+      return 'wallet';
+    }
+    
+    return 'wallet'; // Default to wallet analysis
+  };
+
+  // Load followed whales from localStorage on component mount
+  useEffect(() => {
+    const savedFollows = localStorage.getItem('followedWhales');
+    if (savedFollows) {
+      setFollowedWhales(new Set(JSON.parse(savedFollows)));
+    }
+  }, []);
+
+  // Save followed whales to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('followedWhales', JSON.stringify(Array.from(followedWhales)));
+  }, [followedWhales]);
+
+  const toggleFollowWhale = (address: string) => {
+    const newFollows = new Set(followedWhales);
+    if (newFollows.has(address)) {
+      newFollows.delete(address);
+    } else {
+      newFollows.add(address);
+    }
+    setFollowedWhales(newFollows);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+      setPortfolioData(null);
+      setWhaleData(null);
       
       try {
-        // Check if query contains a wallet address for portfolio analysis
-        const walletAddress = extractWalletAddress(query);
+        const address = extractWalletAddress(query);
+        const type = detectQueryType(query);
+        setQueryType(type);
         
-        if (walletAddress) {
-          // Fetch portfolio data for wallet analysis
-          const response = await fetch(`http://localhost:3001/api/portfolio?wallet=${encodeURIComponent(walletAddress)}&chain=${chain}`);
-          const result = await response.json();
-          
-          if (result.success) {
-            setPortfolioData(result.data);
-            setTokens(result.data.tokens.slice(0, 8)); // Show top 8 tokens
+        if (address) {
+          if (type === 'whale') {
+            // Fetch whale analysis data
+            const response = await fetch(`http://localhost:3001/api/whale/holders/${encodeURIComponent(address)}?chain=${chain}&limit=50`);
+            const result = await response.json();
+            
+            if (result.success) {
+              setWhaleData(result.data);
+            } else {
+              setError(result.error || 'Failed to fetch whale data');
+            }
           } else {
-            setError(result.error || 'Failed to fetch portfolio data');
+            // Fetch portfolio data for wallet analysis
+            const response = await fetch(`http://localhost:3001/api/portfolio?wallet=${encodeURIComponent(address)}&chain=${chain}`);
+            const result = await response.json();
+            
+            if (result.success) {
+              setPortfolioData(result.data);
+              setTokens(result.data.tokens.slice(0, 8)); // Show top 8 tokens
+            } else {
+              setError(result.error || 'Failed to fetch portfolio data');
+            }
           }
         } else {
-          // For non-wallet queries, show a message that this requires wallet analysis
-          setError('This demo requires a wallet address. Try: "Analyze wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"');
+          setError('Please provide a valid address. Try: "Analyze wallet 0x..." or "Whale analysis for token 0x..."');
         }
       } catch (error: any) {
         setError(error.message || 'Failed to fetch data');
@@ -120,8 +187,12 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
         <div className="glass-card p-6 mb-8 animate-slide-up">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold mb-2">Portfolio Analysis</h1>
+              <h1 className="text-2xl font-bold mb-2">
+                {queryType === 'whale' ? '🐋 Whale Analysis' : '📊 Portfolio Analysis'}
+              </h1>
               <p className="text-muted-foreground italic">"{query}"</p>
+              
+              {/* Portfolio Data */}
               {portfolioData && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   <div>
@@ -151,6 +222,29 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
                   </div>
                 </div>
               )}
+              
+              {/* Whale Data */}
+              {whaleData && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Token</p>
+                    <p className="text-lg font-semibold">{whaleData.tokenSymbol}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Whale Count</p>
+                    <p className="text-lg font-semibold">{whaleData.whaleCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Concentration</p>
+                    <p className="text-lg font-semibold">{whaleData.whaleConcentration}%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Risk Score</p>
+                    <p className="text-lg font-semibold">{whaleData.riskScore}/100</p>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex items-center gap-4 mt-3">
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-accent rounded-full"></span>
@@ -173,17 +267,36 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
           </div>
         </div>
 
-        <Tabs defaultValue="tokens" className="space-y-6">
+        <Tabs defaultValue={queryType === 'whale' ? "whales" : "tokens"} className="space-y-6">
           <TabsList className="glass-card p-1">
-            <TabsTrigger value="tokens" className="data-[state=active]:bg-primary/20">
-              Token Overview
-            </TabsTrigger>
-            <TabsTrigger value="transfers" className="data-[state=active]:bg-primary/20">
-              Transfers
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/20">
-              Analytics
-            </TabsTrigger>
+            {queryType === 'whale' ? (
+              <>
+                <TabsTrigger value="whales" className="data-[state=active]:bg-primary/20">
+                  🐋 Whale Holders
+                </TabsTrigger>
+                <TabsTrigger value="watchlist" className="data-[state=active]:bg-primary/20">
+                  ⭐ Watchlist ({followedWhales.size})
+                </TabsTrigger>
+                <TabsTrigger value="insights" className="data-[state=active]:bg-primary/20">
+                  💡 AI Insights
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/20">
+                  📊 Analytics
+                </TabsTrigger>
+              </>
+            ) : (
+              <>
+                <TabsTrigger value="tokens" className="data-[state=active]:bg-primary/20">
+                  Token Overview
+                </TabsTrigger>
+                <TabsTrigger value="transfers" className="data-[state=active]:bg-primary/20">
+                  Transfers
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/20">
+                  Analytics
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="tokens" className="space-y-6">
@@ -310,6 +423,180 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Whale Holders Tab */}
+          <TabsContent value="whales" className="space-y-6">
+            {whaleData && (
+              <div className="space-y-6">
+                {/* Whale Holders Grid */}
+                <div className="grid gap-4">
+                  {whaleData.topWhales.map((whale: any, index: number) => {
+                    const getWhaleIcon = (type: string) => {
+                      switch (type) {
+                        case 'mega': return '🐋';
+                        case 'large': return '🐳';
+                        case 'medium': return '🐟';
+                        default: return '🐠';
+                      }
+                    };
+
+                    const getRiskColor = (risk: string) => {
+                      switch (risk) {
+                        case 'critical': return 'text-red-500';
+                        case 'high': return 'text-orange-500';
+                        case 'medium': return 'text-yellow-500';
+                        case 'low': return 'text-green-500';
+                        default: return 'text-gray-500';
+                      }
+                    };
+
+                    return (
+                      <Card key={whale.address} className="glass-card hover:glow-purple transition-all">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">{getWhaleIcon(whale.whaleType)}</div>
+                              <div>
+                                <div className="font-mono text-sm">
+                                  {whale.address.slice(0, 6)}...{whale.address.slice(-4)}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {whale.whaleType}
+                                  </Badge>
+                                  <span className={`text-xs ${getRiskColor(whale.riskLevel || 'low')}`}>
+                                    {whale.riskLevel} risk
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="font-semibold">{whale.percentage.toFixed(2)}%</div>
+                                <div className="text-sm text-muted-foreground">
+                                  ${whale.balanceUSD.toLocaleString()}
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant={followedWhales.has(whale.address) ? "default" : "outline"}
+                                onClick={() => toggleFollowWhale(whale.address)}
+                                className="h-8 w-8 p-0"
+                              >
+                                {followedWhales.has(whale.address) ? (
+                                  <Star className="h-4 w-4 fill-current" />
+                                ) : (
+                                  <StarOff className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Whale Watchlist Tab */}
+          <TabsContent value="watchlist" className="space-y-6">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5" />
+                  Followed Whales ({followedWhales.size})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {followedWhales.size === 0 ? (
+                  <div className="text-center py-8">
+                    <StarOff className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Whales Followed</h3>
+                    <p className="text-muted-foreground">
+                      Start following whale addresses by clicking the star icon next to any whale holder.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Array.from(followedWhales).map((address) => (
+                      <Card key={address} className="glass-card hover:glow-purple transition-all">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">⭐</div>
+                              <div>
+                                <div className="font-mono text-sm">
+                                  {address.slice(0, 6)}...{address.slice(-4)}
+                                </div>
+                                <Badge variant="outline" className="text-xs mt-1">
+                                  Followed Whale
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                Active
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => toggleFollowWhale(address)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <StarOff className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Whale Insights Tab */}
+          <TabsContent value="insights" className="space-y-6">
+            {whaleData && (
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5" />
+                    AI Whale Analysis Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {whaleData.insights.map((insight: string, index: number) => (
+                      <div key={index} className="p-4 bg-muted/20 rounded-lg border-l-4 border-primary/50">
+                        <p className="text-sm">{insight}</p>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-6 grid md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/10 rounded-lg">
+                      <h4 className="font-semibold mb-2">Distribution Health</h4>
+                      <Badge 
+                        variant={whaleData.distributionHealth === 'healthy' ? 'default' : 'destructive'}
+                        className="text-sm"
+                      >
+                        {whaleData.distributionHealth}
+                      </Badge>
+                    </div>
+                    <div className="p-4 bg-muted/10 rounded-lg">
+                      <h4 className="font-semibold mb-2">Risk Assessment</h4>
+                      <div className="text-2xl font-bold">{whaleData.riskScore}/100</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>

@@ -35,7 +35,7 @@ chatRouter.post('/', async (req: express.Request, res: express.Response) => {
     const tools = [
       createBalanceTool(baseUrl, chainParam),
       createPortfolioAnalysisTool(baseUrl, chainParam),
-      createWhaleAnalysisTool(baseUrl)
+      createWhaleAnalysisTool(baseUrl, chainParam)
     ];
 
     // Create prompt template
@@ -46,21 +46,23 @@ chatRouter.post('/', async (req: express.Request, res: express.Response) => {
 
 Your capabilities:
 - Balance Check: Get wallet balance and basic token information
-- Portfolio Analysis: Detailed analysis with diversity scores, insights, and recommendations
-- Whale Analysis: Track large token holders (coming soon)
+- Portfolio Analysis: Detailed analysis with diversity scores, insights, and recommendations  
+- Whale Analysis: Analyze token holder distribution and whale activity
 
 Guidelines:
 1. Always be helpful and accurate with crypto data
 2. Choose the right tool based on user intent:
    - Use "balance_check" for simple balance/value queries ("balance", "how much", "total value")
-   - Use "portfolio_analysis" for detailed analysis ("analyze", "insights", "diversity", "breakdown")
+   - Use "portfolio_analysis" for detailed wallet analysis ("analyze wallet", "portfolio insights", "diversity")
+   - Use "whale_analysis" for token holder analysis ("whale holders", "token distribution", "biggest holders")
 3. Explain complex crypto concepts in simple terms
 4. Provide actionable insights and recommendations when doing analysis
-5. If you need a wallet address, ask the user to provide one
-6. Format responses clearly and concisely
+5. For whale analysis, you need a token contract address
+6. For portfolio analysis, you need a wallet address
+7. Format responses clearly and concisely with emojis for better readability
 
-Current working features: Balance Check, Portfolio Analysis
-Coming soon: Whale tracking, Token discovery, Multi-chain analysis`
+Current working features: Balance Check, Portfolio Analysis, Whale Analysis
+Advanced features: Multi-chain analysis, Risk assessment, Distribution health scoring`
       ],
       [
         "human",

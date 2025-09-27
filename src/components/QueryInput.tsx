@@ -45,14 +45,14 @@ What would you like to explore? 🚀`,
 
   const prebuiltQueries = mode === 'chat' ? [
     "Analyze Vitalik's wallet: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+    "Who are the whale holders of RENDER: 0xA0b86a33E6441e47c4C46ff0ba81F73e2D08dE26",
     "What can you help me with?",
-    "How do I analyze a crypto portfolio?",
     "Show me portfolio diversity scoring"
   ] : [
     "Show me the top 10 AI tokens by holder count",
-    "Track whale movements for FET in the last 24 hours",
-    "Compare token distribution between RNDR and FET",
-    "Alert me when a whale moves more than 1M tokens"
+    "Analyze whale holders for RENDER token: 0xA0b86a33E6441e47c4C46ff0ba81F73e2D08dE26",
+    "Who are the biggest holders of FET: 0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85",
+    "Token distribution analysis for The Graph: 0xc944E90C64B2c07662A292be6244BDf05Cda44a7"
   ];
 
   const chains = [
