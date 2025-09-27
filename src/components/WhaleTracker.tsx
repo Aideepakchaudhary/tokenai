@@ -74,32 +74,46 @@ export function WhaleTracker() {
     setTokenInput(token);
 
     try {
-      const response = await fetch('http://localhost:3001/api/chat', {
-        method: 'POST',
+      const response = await fetch(`/api/whales?token=${encodeURIComponent(token)}&limit=10`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: `Show me ${token} whales`,
-          chain: 'ethereum'
-        }),
       });
 
       const result = await response.json();
       
-      if (result.success) {
-        // Parse the AI response to extract whale data
-        // This is a simplified version - in production, you might want to call the whale API directly
+      if (result.success && result.data) {
+        const data = result.data;
+        const holders = data.holders || [];
+        
+        // Convert whale API data to WhaleAnalysis format
+        const topWhales: WhaleHolder[] = holders.map((holder: any) => ({
+          address: holder.address,
+          balance: holder.balanceFormatted,
+          balanceUSD: 0, // Would need price data
+          percentage: holder.percentage,
+          whaleType: holder.percentage > 5 ? 'mega' : holder.percentage > 2 ? 'large' : holder.percentage > 1 ? 'medium' : 'small',
+          riskLevel: 'low',
+          lastActivity: ''
+        }));
+        
+        const whaleConcentration = holders.slice(0, 10).reduce((sum: number, h: any) => sum + h.percentage, 0);
+        
         setWhaleData({
-          tokenAddress: '',
-          tokenSymbol: token.toUpperCase(),
-          tokenName: token,
-          whaleCount: 0,
-          whaleConcentration: 0,
-          riskScore: 0,
-          distributionHealth: 'healthy',
-          topWhales: [],
-          insights: [result.data.content]
+          tokenAddress: data.token.address,
+          tokenSymbol: data.token.symbol,
+          tokenName: data.token.name,
+          whaleCount: holders.length,
+          whaleConcentration,
+          riskScore: whaleConcentration > 50 ? 80 : whaleConcentration > 30 ? 60 : 40,
+          distributionHealth: whaleConcentration > 50 ? 'risky' : whaleConcentration > 30 ? 'concerning' : 'healthy',
+          topWhales,
+          insights: [
+            `Found ${holders.length} valid whale holders for ${data.token.symbol}`,
+            `Top 10 holders control ${whaleConcentration.toFixed(1)}% of total supply`,
+            `${data.statistics.filteredOut} invalid entries were filtered out`
+          ]
         });
       } else {
         setError(result.error || 'Failed to analyze whales');
