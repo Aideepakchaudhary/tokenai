@@ -62,7 +62,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               className="btn-neon text-lg px-8 py-4 font-semibold"
               onClick={onGetStarted}
             >
-              Try a Demo Query
+              Chat with ChainMate
             </Button>
             <Button
               size="lg"

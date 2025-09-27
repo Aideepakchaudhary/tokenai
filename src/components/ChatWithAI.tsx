@@ -4,23 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, Search, Sparkles, MessageCircle, BarChart3, Loader2 } from "lucide-react";
+import { Mic, Sparkles, MessageCircle, Loader2 } from "lucide-react";
 import { ChatMessage } from "@/lib/types";
 
-interface QueryInputProps {
-  onRunQuery: (query: string, chain: string) => void;
-}
-
-export function QueryInput({ onRunQuery }: QueryInputProps) {
+export function ChatWithAI() {
   const [query, setQuery] = useState("");
   const [selectedChain, setSelectedChain] = useState("ethereum");
-  const [mode, setMode] = useState<'query' | 'chat'>('query');
+  const mode: 'chat' = 'chat';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize welcome message when switching to chat mode
+  // Initialize welcome message on first render
   useEffect(() => {
-    if (mode === 'chat' && messages.length === 0) {
+    if (messages.length === 0) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
@@ -41,18 +37,13 @@ What would you like to explore? 🚀`,
         timestamp: new Date().toISOString()
       }]);
     }
-  }, [mode, messages.length]);
+  }, [messages.length]);
 
-  const prebuiltQueries = mode === 'chat' ? [
+  const prebuiltQueries = [
     "Analyze Vitalik's wallet: 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
     "What can you help me with?",
     "How do I analyze a crypto portfolio?",
     "Show me portfolio diversity scoring"
-  ] : [
-    "Show me the top 10 AI tokens by holder count",
-    "Track whale movements for FET in the last 24 hours",
-    "Compare token distribution between RNDR and FET",
-    "Alert me when a whale moves more than 1M tokens"
   ];
 
   const chains = [
@@ -67,21 +58,12 @@ What would you like to explore? 🚀`,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      if (mode === 'chat') {
-        handleChatMessage(query);
-      } else {
-        onRunQuery(query, selectedChain);
-      }
+      handleChatMessage(query);
     }
   };
 
   const handlePrebuiltQuery = (selectedQuery: string) => {
-    if (mode === 'chat') {
-      handleChatMessage(selectedQuery);
-    } else {
-      setQuery(selectedQuery);
-      onRunQuery(selectedQuery, selectedChain);
-    }
+    handleChatMessage(selectedQuery);
   };
 
   const handleChatMessage = async (message: string) => {
@@ -146,33 +128,10 @@ What would you like to explore? 🚀`,
               Natural language queries powered by LangChain + The Graph Token API
             </p>
             
-            {/* Mode Selector */}
-            <div className="flex justify-center mt-8 mb-6">
-              <div className="glass-card p-1 rounded-lg flex">
-                <Button
-                  variant={mode === 'query' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setMode('query')}
-                  className="flex items-center gap-2"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Query Mode
-                </Button>
-                <Button
-                  variant={mode === 'chat' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setMode('chat')}
-                  className="flex items-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Chat Mode
-                </Button>
-              </div>
-            </div>
           </div>
 
           {/* Chat Messages (only in chat mode) */}
-          {mode === 'chat' && messages.length > 0 && (
+          {messages.length > 0 && (
             <Card className="glass-card mb-8 animate-slide-up">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -237,7 +196,7 @@ What would you like to explore? 🚀`,
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={mode === 'chat' ? "Ask me about crypto portfolios... (e.g., 'Analyze this wallet: 0x...')" : "Ask me anything about tokens..."}
+                  placeholder={"Ask me about crypto portfolios... (e.g., 'Analyze this wallet: 0x...')"}
                   className="text-lg p-6 pr-16 bg-muted/50 border-border/50 focus:border-primary"
                 />
                 <Button
@@ -281,9 +240,9 @@ What would you like to explore? 🚀`,
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   ) : (
-                    <Search className="w-5 h-5 mr-2" />
+                    <MessageCircle className="w-5 h-5 mr-2" />
                   )}
-                  {isLoading ? 'Processing...' : (mode === 'chat' ? 'Send Message' : 'Run Query')}
+                  {isLoading ? 'Processing...' : 'Send Message'}
                 </Button>
               </div>
             </form>
@@ -294,7 +253,7 @@ What would you like to explore? 🚀`,
             <div className="flex items-center gap-2 mb-6">
               <Sparkles className="w-5 h-5 text-accent" />
               <h3 className="text-xl font-semibold">
-                {mode === 'chat' ? 'Try these portfolio analysis examples:' : 'Try these examples:'}
+                {'Try these portfolio analysis examples:'}
               </h3>
             </div>
             

@@ -9,7 +9,7 @@ interface NavigationProps {
 export function Navigation({ currentScreen, onScreenChange }: NavigationProps) {
   const screens = [
     { id: "landing", label: "Home" },
-    { id: "query", label: "Query" },
+    { id: "query", label: "Chat with AI" },
   ];
 
   return (
