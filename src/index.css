@@ -154,13 +154,12 @@
     background-clip: text;
   }
 
-  /* Network animation background */
+  /* Network static background */
   .network-bg {
     background-image: 
       radial-gradient(circle at 20% 50%, hsl(270 91% 65% / 0.1) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, hsl(217 91% 60% / 0.1) 0%, transparent 50%),
       radial-gradient(circle at 40% 80%, hsl(142 86% 56% / 0.1) 0%, transparent 50%);
-    animation: float 6s ease-in-out infinite;
   }
 
   /* Button variants */
