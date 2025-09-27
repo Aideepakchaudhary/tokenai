@@ -135,12 +135,24 @@ export function WhaleTracker() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12 animate-slide-up">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="text-gradient">🐋 Whale Tracker</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Analyze token whale holders and distribution risks
-            </p>
+            <div className="flex justify-between items-start mb-8">
+              <div></div> {/* Spacer */}
+              <div className="text-center flex-1">
+                <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                  <span className="text-gradient">🐋 Whale Tracker</span>
+                </h1>
+                <p className="text-xl text-muted-foreground">
+                  Analyze token whale holders and distribution risks
+                </p>
+              </div>
+              {/* Whale Alerts */}
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-sm">
+                  Following: {followedWhales.size}
+                </Badge>
+                <WhaleAlerts followedWhales={followedWhales} />
+              </div>
+            </div>
 
             {/* Search Input */}
             <div className="max-w-md mx-auto mb-8">
@@ -275,6 +287,94 @@ export function WhaleTracker() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Top Whales List */}
+              {whaleData.topWhales && whaleData.topWhales.length > 0 && (
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-2xl">🐋</span>
+                      Top Whale Holders ({whaleData.topWhales.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {whaleData.topWhales.slice(0, 10).map((whale: any, index: number) => {
+                        const getWhaleIcon = (type: string) => {
+                          switch (type) {
+                            case 'mega': return '🐋';
+                            case 'large': return '🐳';
+                            case 'medium': return '🐟';
+                            default: return '🐠';
+                          }
+                        };
+
+                        const getRiskColor = (risk: string) => {
+                          switch (risk) {
+                            case 'critical': return 'text-red-500';
+                            case 'high': return 'text-orange-500';
+                            case 'medium': return 'text-yellow-500';
+                            case 'low': return 'text-green-500';
+                            default: return 'text-gray-500';
+                          }
+                        };
+
+                        return (
+                          <Card key={whale.address} className="border hover:bg-muted/50 transition-colors">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="text-2xl">{getWhaleIcon(whale.whaleType)}</div>
+                                  <div>
+                                    <div className="font-mono text-sm font-semibold">
+                                      {whale.address.slice(0, 8)}...{whale.address.slice(-6)}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge 
+                                        variant="outline" 
+                                        className={getWhaleTypeColor(whale.whaleType)}
+                                      >
+                                        {whale.whaleType.charAt(0).toUpperCase() + whale.whaleType.slice(1)} Whale
+                                      </Badge>
+                                      <span className={`text-xs ${getRiskColor(whale.riskLevel || 'low')}`}>
+                                        {whale.riskLevel || 'low'} risk
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                  <div className="text-right">
+                                    <div className="text-lg font-bold">
+                                      {whale.percentage.toFixed(2)}%
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {whale.balanceUSD > 0 ? `$${whale.balanceUSD.toLocaleString()}` : whale.balance}
+                                    </div>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant={followedWhales.has(whale.address) ? "default" : "outline"}
+                                    onClick={() => toggleFollowWhale(whale.address)}
+                                    className="h-8 w-8 p-0"
+                                    title={followedWhales.has(whale.address) ? "Unfollow whale" : "Follow whale"}
+                                  >
+                                    {followedWhales.has(whale.address) ? (
+                                      <Star className="h-4 w-4 fill-current" />
+                                    ) : (
+                                      <StarOff className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Call to Action */}
               <Card className="glass-card border-blue-200 bg-blue-50/50">

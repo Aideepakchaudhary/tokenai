@@ -14,7 +14,7 @@ export function Navigation({ currentScreen, onScreenChange }: NavigationProps) {
     { id: "landing", label: "Home" },
     { id: "query", label: "Query" },
     { id: "results", label: "Results" },
-    { id: "whales", label: "🐋 Whales" },
+    // { id: "whales", label: "🐋 Whales" }, // Temporarily hidden - under development
     { id: "demo", label: "Demo" }
   ];
 
