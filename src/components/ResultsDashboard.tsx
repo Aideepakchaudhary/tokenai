@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, RefreshCw, TrendingUp, TrendingDown, Users, DollarSign } from "lucide-react";
+import { Download, RefreshCw, TrendingUp, TrendingDown, Users, DollarSign, AlertCircle } from "lucide-react";
+import { TokenBalance } from "@/lib/types";
 
 interface ResultsDashboardProps {
   query: string;
@@ -13,46 +14,9 @@ interface ResultsDashboardProps {
 
 export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardProps) {
   const [loading, setLoading] = useState(true);
-  
-  // Mock data - in real app this would come from The Graph API
-  const mockTokens = [
-    {
-      symbol: "FET",
-      name: "Fetch.ai",
-      price: "$1.42",
-      change24h: "+12.5%",
-      holders: "45,231",
-      supply: "2.63B",
-      positive: true
-    },
-    {
-      symbol: "RNDR",
-      name: "Render Token",
-      price: "$7.83",
-      change24h: "-3.2%",
-      holders: "23,456",
-      supply: "531M",
-      positive: false
-    },
-    {
-      symbol: "OCEAN",
-      name: "Ocean Protocol",
-      price: "$0.78",
-      change24h: "+8.7%",
-      holders: "34,567",
-      supply: "1.41B",
-      positive: true
-    },
-    {
-      symbol: "GRT",
-      name: "The Graph",
-      price: "$0.23",
-      change24h: "+15.3%",
-      holders: "67,890",
-      supply: "10.0B",
-      positive: true
-    }
-  ];
+  const [tokens, setTokens] = useState<TokenBalance[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [portfolioData, setPortfolioData] = useState<any>(null);
 
   const mockTransfers = [
     {
@@ -81,11 +45,46 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
     }
   ];
 
+  // Helper function to extract wallet address from query
+  const extractWalletAddress = (query: string): string | null => {
+    const addressRegex = /0x[a-fA-F0-9]{40}/g;
+    const matches = query.match(addressRegex);
+    return matches ? matches[0] : null;
+  };
+
   useEffect(() => {
-    // Simulate API call
-    const timer = setTimeout(() => setLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Check if query contains a wallet address for portfolio analysis
+        const walletAddress = extractWalletAddress(query);
+        
+        if (walletAddress) {
+          // Fetch portfolio data for wallet analysis
+          const response = await fetch(`http://localhost:3001/api/portfolio?wallet=${encodeURIComponent(walletAddress)}&chain=${chain}`);
+          const result = await response.json();
+          
+          if (result.success) {
+            setPortfolioData(result.data);
+            setTokens(result.data.tokens.slice(0, 8)); // Show top 8 tokens
+          } else {
+            setError(result.error || 'Failed to fetch portfolio data');
+          }
+        } else {
+          // For non-wallet queries, show a message that this requires wallet analysis
+          setError('This demo requires a wallet address. Try: "Analyze wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"');
+        }
+      } catch (error: any) {
+        setError(error.message || 'Failed to fetch data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [query, chain]);
 
   if (loading) {
     return (
@@ -93,7 +92,22 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
         <div className="glass-card p-12 text-center animate-pulse-glow">
           <RefreshCw className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
           <h3 className="text-2xl font-bold mb-2">Processing Query...</h3>
-          <p className="text-muted-foreground">Fetching data from The Graph Token API</p>
+          <p className="text-muted-foreground">Fetching data from The Graph Token API on {chain}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen pt-24 network-bg flex items-center justify-center">
+        <div className="glass-card p-12 text-center">
+          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h3 className="text-2xl font-bold mb-2">Query Error</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button className="btn-neon" onClick={onNewQuery}>
+            Try New Query
+          </Button>
         </div>
       </div>
     );
@@ -106,8 +120,28 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
         <div className="glass-card p-6 mb-8 animate-slide-up">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold mb-2">Query Results</h1>
+              <h1 className="text-2xl font-bold mb-2">Portfolio Analysis</h1>
               <p className="text-muted-foreground italic">"{query}"</p>
+              {portfolioData && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Value</p>
+                    <p className="text-lg font-semibold">${portfolioData.totalValueUSD.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Token Count</p>
+                    <p className="text-lg font-semibold">{portfolioData.tokenCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Diversity Score</p>
+                    <p className="text-lg font-semibold">{portfolioData.diversityScore}/100</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Health</p>
+                    <p className="text-lg font-semibold capitalize">{portfolioData.portfolioHealth}</p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-4 mt-3">
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-accent rounded-full"></span>
@@ -146,47 +180,57 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
           <TabsContent value="tokens" className="space-y-6">
             {/* Token Cards Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {mockTokens.map((token, index) => (
-                <Card key={index} className="glass-card group hover:glow-purple transition-all animate-slide-up">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{token.symbol}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{token.name}</p>
-                      </div>
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg"></div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
+              {tokens.map((token, index) => {
+                const tokenValue = token.value;
+                const tokenBalance = (parseFloat(token.amount) / Math.pow(10, token.decimals)).toFixed(4);
+                const isPositive = Math.random() > 0.5; // Mock positive/negative since we don't have real price change data
+                
+                return (
+                  <Card key={index} className="glass-card group hover:glow-purple transition-all animate-slide-up">
+                    <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold">{token.price}</span>
-                        <div className={`flex items-center gap-1 ${token.positive ? 'text-accent' : 'text-destructive'}`}>
-                          {token.positive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                          <span className="text-sm font-medium">{token.change24h}</span>
+                        <div>
+                          <CardTitle className="text-lg">{token.symbol}</CardTitle>
+                          <p className="text-sm text-muted-foreground">{token.name}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                          {token.symbol.slice(0, 2)}
                         </div>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-muted-foreground">Holders</p>
-                            <p className="font-medium">{token.holders}</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold">${tokenValue.toLocaleString()}</span>
+                          <div className={`flex items-center gap-1 ${isPositive ? 'text-accent' : 'text-destructive'}`}>
+                            {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                            <span className="text-sm font-medium">
+                              {isPositive ? '+' : '-'}{(Math.random() * 20).toFixed(1)}%
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-muted-foreground">Supply</p>
-                            <p className="font-medium">{token.supply}</p>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-muted-foreground">Balance</p>
+                              <p className="font-medium">{tokenBalance}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <DollarSign className="w-4 h-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-muted-foreground">Network</p>
+                              <p className="font-medium uppercase">{token.network_id}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
 

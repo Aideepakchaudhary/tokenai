@@ -106,6 +106,7 @@ What would you like to explore? 🚀`,
         },
         body: JSON.stringify({
           message: message.trim(),
+          chain: selectedChain,
         }),
       });
 

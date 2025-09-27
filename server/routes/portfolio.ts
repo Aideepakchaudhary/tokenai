@@ -13,7 +13,7 @@ import {
 export const portfolioRouter = express.Router();
 
 portfolioRouter.get('/', async (req: express.Request, res: express.Response) => {
-  const { wallet } = req.query;
+  const { wallet, chain } = req.query;
 
   if (!wallet || typeof wallet !== 'string') {
     return res.status(400).json({
@@ -35,10 +35,25 @@ portfolioRouter.get('/', async (req: express.Request, res: express.Response) => 
 
   const startTime = Date.now();
 
+  // Map chain names to The Graph API network IDs
+  const chainMapping: Record<string, string> = {
+    'ethereum': 'mainnet',
+    'arbitrum': 'arbitrum-one',
+    'polygon': 'matic',
+    'optimism': 'optimism',
+    'base': 'base',
+    'bsc': 'bsc',
+    'avalanche': 'avalanche',
+    'unichain': 'unichain'
+  };
+
+  const networkId = chainMapping[chain as string] || 'mainnet';
+  console.log(`Fetching data for chain: ${chain} (network_id: ${networkId})`);
+
   try {
-    // Call The Graph Token API
+    // Call The Graph Token API with network filter
     const response = await axios.get(
-      `${process.env.TOKEN_API_BASE_URL}/balances/evm/${wallet}?limit=200`,
+      `${process.env.TOKEN_API_BASE_URL}/balances/evm/${wallet}?network_id=${networkId}&limit=200`,
       {
         headers: {
           'Authorization': `Bearer ${process.env.GRAPH_API_KEY}`,

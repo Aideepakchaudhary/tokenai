@@ -4,7 +4,7 @@ import axios from "axios";
 import { isValidAddress } from "./backend-utils";
 
 // Portfolio Analysis Tool
-export const createPortfolioAnalysisTool = (baseUrl: string) => {
+export const createPortfolioAnalysisTool = (baseUrl: string, chain: string = 'ethereum') => {
   return new DynamicTool({
     name: "portfolio_analysis",
     description: `Analyze a crypto wallet's portfolio including token holdings, total value, diversity score, and AI insights. 
@@ -27,8 +27,8 @@ export const createPortfolioAnalysisTool = (baseUrl: string) => {
           });
         }
 
-        // Call our portfolio API
-        const response = await axios.get(`${baseUrl}/api/portfolio?wallet=${encodeURIComponent(walletAddress.trim())}`);
+        // Call our portfolio API with chain parameter
+        const response = await axios.get(`${baseUrl}/api/portfolio?wallet=${encodeURIComponent(walletAddress.trim())}&chain=${chain}`);
         
         if (!response.data.success) {
           return JSON.stringify({
@@ -98,7 +98,7 @@ export const extractAddressFromQuery = (query: string): string | null => {
 };
 
 // Balance Tool for simple balance queries
-export const createBalanceTool = (baseUrl: string) => {
+export const createBalanceTool = (baseUrl: string, chain: string = 'ethereum') => {
   return new DynamicTool({
     name: "balance_check",
     description: `Get the balance and basic information for a crypto wallet. Use this when users ask about:
@@ -120,8 +120,8 @@ export const createBalanceTool = (baseUrl: string) => {
           });
         }
 
-        // Call our portfolio API
-        const response = await axios.get(`${baseUrl}/api/portfolio?wallet=${encodeURIComponent(walletAddress.trim())}`);
+        // Call our portfolio API with chain parameter
+        const response = await axios.get(`${baseUrl}/api/portfolio?wallet=${encodeURIComponent(walletAddress.trim())}&chain=${chain}`);
         
         if (!response.data.success) {
           return JSON.stringify({

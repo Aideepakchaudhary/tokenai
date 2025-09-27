@@ -9,7 +9,7 @@ export const chatRouter = express.Router();
 
 chatRouter.post('/', async (req: express.Request, res: express.Response) => {
   try {
-    const { message, conversationId } = req.body;
+    const { message, conversationId, chain } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -29,11 +29,12 @@ chatRouter.post('/', async (req: express.Request, res: express.Response) => {
       openAIApiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Create tools
+    // Create tools with chain parameter
     const baseUrl = process.env.BACKEND_URL || 'http://localhost:3001';
+    const chainParam = chain || 'ethereum';
     const tools = [
-      createBalanceTool(baseUrl),
-      createPortfolioAnalysisTool(baseUrl),
+      createBalanceTool(baseUrl, chainParam),
+      createPortfolioAnalysisTool(baseUrl, chainParam),
       createWhaleAnalysisTool(baseUrl)
     ];
 
