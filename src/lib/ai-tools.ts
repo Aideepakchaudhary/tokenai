@@ -3,6 +3,19 @@ import { z } from "zod";
 import axios from "axios";
 import { isValidAddress } from "./backend-utils";
 
+// Smart decimal formatting for USD values
+const formatUSD = (value: number): string => {
+  if (value >= 1) {
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  } else if (value >= 0.01) {
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
+  } else if (value > 0) {
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 8 })}`;
+  } else {
+    return '$0.00';
+  }
+};
+
 // Portfolio Analysis Tool
 export const createPortfolioAnalysisTool = (baseUrl: string, chain: string = 'ethereum') => {
   return new DynamicTool({
@@ -43,7 +56,7 @@ export const createPortfolioAnalysisTool = (baseUrl: string, chain: string = 'et
           success: true,
           summary: `Portfolio Analysis for ${data.walletAddress}`,
           metrics: {
-            totalValue: `$${data.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            totalValue: formatUSD(data.totalValueUSD),
             tokenCount: data.tokenCount,
             diversityScore: `${data.diversityScore}/100`,
             portfolioHealth: data.portfolioHealth,
@@ -54,8 +67,8 @@ export const createPortfolioAnalysisTool = (baseUrl: string, chain: string = 'et
           topTokens: data.tokens.slice(0, 5).map(token => ({
             symbol: token.symbol,
             name: token.name,
-            value: `$${token.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            balance: (parseFloat(token.amount) / Math.pow(10, token.decimals)).toFixed(4)
+            value: formatUSD(token.value),
+            balance: (parseFloat(token.amount) / Math.pow(10, token.decimals)).toFixed(8)
           })),
           lastActivity: data.lastActivity
         });
@@ -135,11 +148,11 @@ export const createBalanceTool = (baseUrl: string, chain: string = 'ethereum') =
         return JSON.stringify({
           success: true,
           summary: `Balance for ${data.walletAddress}`,
-          totalValue: `$${data.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          totalValue: formatUSD(data.totalValueUSD),
           tokenCount: data.tokenCount,
           topTokens: data.tokens.slice(0, 3).map(token => ({
             symbol: token.symbol,
-            value: `$${token.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            value: formatUSD(token.value)
           })),
           lastActivity: data.lastActivity
         });

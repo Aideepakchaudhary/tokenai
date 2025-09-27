@@ -126,7 +126,16 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Value</p>
-                    <p className="text-lg font-semibold">${portfolioData.totalValueUSD.toLocaleString()}</p>
+                    <p className="text-lg font-semibold">
+                      {portfolioData.totalValueUSD >= 1 
+                        ? `$${portfolioData.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                        : portfolioData.totalValueUSD >= 0.01
+                        ? `$${portfolioData.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
+                        : portfolioData.totalValueUSD > 0
+                        ? `$${portfolioData.totalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 8 })}`
+                        : '$0.00'
+                      }
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Token Count</p>
@@ -201,7 +210,16 @@ export function ResultsDashboard({ query, chain, onNewQuery }: ResultsDashboardP
                     <CardContent>
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold">${tokenValue.toLocaleString()}</span>
+                          <span className="text-2xl font-bold">
+                            {tokenValue >= 1 
+                              ? `$${tokenValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+                              : tokenValue >= 0.01
+                              ? `$${tokenValue.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`
+                              : tokenValue > 0
+                              ? `$${tokenValue.toLocaleString('en-US', { minimumFractionDigits: 6, maximumFractionDigits: 8 })}`
+                              : '$0.00'
+                            }
+                          </span>
                           <div className={`flex items-center gap-1 ${isPositive ? 'text-accent' : 'text-destructive'}`}>
                             {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                             <span className="text-sm font-medium">
