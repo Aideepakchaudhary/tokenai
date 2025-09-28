@@ -193,7 +193,7 @@ const createWhaleAnalysisTool = (baseUrl: string, chain: string = 'ethereum') =>
         }
 
         // Call whale analysis API
-        const response = await axios.get(`${baseUrl}/api/whale?tokenAddress=${cleanAddress}&chain=${chain}&limit=50`);
+        const response = await axios.get(`${baseUrl}/api/whale-simple?tokenAddress=${cleanAddress}&chain=${chain}&limit=50`);
         
         if (!response.data.success) {
           return JSON.stringify({
