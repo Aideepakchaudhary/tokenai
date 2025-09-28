@@ -9,7 +9,7 @@ import {
   getDistributionHealth, 
   generateWhaleInsights,
   calculateWatchPriority
-} from '../../../src/lib/whale-utils';
+} from '../src/lib/whale-utils';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -31,15 +31,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const { address: tokenAddress } = req.query;
-  const { chain = 'ethereum', limit = '50' } = req.query;
+  const { tokenAddress, chain = 'ethereum', limit = '50' } = req.query;
 
   if (!tokenAddress || typeof tokenAddress !== 'string' || tokenAddress.length !== 42 || !tokenAddress.startsWith('0x')) {
     return res.status(400).json({
       success: false,
       data: null,
       timestamp: new Date().toISOString(),
-      error: 'Invalid token address format'
+      error: 'Invalid token address format. Provide tokenAddress query parameter.'
     });
   }
 
